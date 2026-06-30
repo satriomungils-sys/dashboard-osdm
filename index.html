@@ -3,76 +3,385 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitoring Pekerjaan OSDM</title>
-<link rel="stylesheet" href="css/style.css">
+<title>Dashboard Monitoring Pekerjaan — OSDM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="app">
 
-<!-- ================= LOGIN ================= -->
-<div id="login-screen" class="login-wrap">
-  <div class="login-card">
-    <svg class="logo" viewBox="0 0 64 64" style="margin:0 auto;display:block;">
-      <circle cx="32" cy="32" r="30" fill="#f5b400"/>
-      <circle cx="32" cy="32" r="22" fill="#0b2a4a"/>
-      <text x="32" y="38" font-size="18" text-anchor="middle" fill="#fff" font-family="Arial">OSDM</text>
-    </svg>
-    <h1>MONITORING PEKERJAAN OSDM</h1>
-    <p>Silakan masuk untuk melanjutkan</p>
-    <div class="login-error" id="login-error"></div>
-    <form id="login-form">
-      <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
-      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
-      <button type="submit">Masuk</button>
-    </form>
-  </div>
-</div>
-
-<!-- ================= APP SHELL ================= -->
-<div id="app-shell" class="app-shell hidden">
-  <aside class="sidebar" id="sidebar">
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="sidebar">
     <div class="brand">
-      <svg width="34" height="34" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r="30" fill="#f5b400"/>
-        <circle cx="32" cy="32" r="22" fill="#0b2a4a"/>
-      </svg>
-      <div>MONITORING PEKERJAAN<br>OSDM</div>
+      <div class="brand-logo">
+        <svg viewBox="0 0 80 80" width="32" height="32">
+          <path d="M40 4 L72 16 V40 C72 60 56 72 40 76 C24 72 8 60 8 40 V16 Z" fill="#d4af37"/>
+          <path d="M40 10 L66 20 V40 C66 56 53 66 40 70 C27 66 14 56 14 40 V20 Z" fill="#0a3d62"/>
+          <circle cx="40" cy="38" r="14" fill="#d4af37"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-title">OSDM</div>
+        <div class="brand-sub">Tim Kerja</div>
+      </div>
     </div>
-    <nav id="sidebar-nav"></nav>
-    <div class="logout" id="btn-logout">&#10148; Logout</div>
+
+    <nav class="nav">
+      <a href="#" class="nav-item active" data-tab="dashboard"><span class="nav-ico">▦</span>Dashboard</a>
+      <a href="#" class="nav-item" data-tab="pekerjaan"><span class="nav-ico">📋</span>Pekerjaan</a>
+      <a href="#" class="nav-item" data-tab="kalender"><span class="nav-ico">📅</span>Kalender</a>
+      <a href="#" class="nav-item" data-tab="laporan"><span class="nav-ico">📄</span>Laporan</a>
+      <a href="#" class="nav-item" data-tab="timkerja"><span class="nav-ico">👥</span>Tim Kerja</a>
+      <a href="#" class="nav-item" data-tab="dokumen"><span class="nav-ico">🗂</span>Dokumen</a>
+      <a href="#" class="nav-item" data-tab="notifikasi"><span class="nav-ico">🔔</span>Notifikasi</a>
+      <a href="#" class="nav-item" data-tab="pengaturan"><span class="nav-ico">⚙</span>Pengaturan</a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="team-card">
+        <div class="team-card-title">Tim Kerja OSDM</div>
+        <div class="team-card-sub">Bekerja Bersama<br>Mewujudkan Kinerja Terbaik</div>
+      </div>
+      <div class="user-card">
+        <div class="user-avatar">AP</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">Andi Pratama</div>
+        </div>
+        <span class="user-caret">⌄</span>
+      </div>
+    </div>
   </aside>
 
-  <div class="main">
+  <!-- ══════════════ MAIN ══════════════ -->
+  <main class="main">
+
+    <!-- TOP BAR -->
     <div class="topbar">
-      <button id="btn-burger" class="btn btn-outline btn-sm" style="display:none;">&#9776;</button>
-      <div>
-        <h2 id="page-title">Dashboard</h2>
-        <div class="crumb" id="page-crumb">Dashboard</div>
+      <div class="topbar-title">
+        <h1 id="pageTitle">Dashboard Monitoring Pekerjaan</h1>
+        <p id="pageSub">Tim Kerja OSDM</p>
       </div>
-      <div class="user">
-        <div style="text-align:right;">
-          <div id="topbar-user-name" style="font-weight:600;"></div>
-          <div id="topbar-user-role" style="color:var(--muted);font-size:12px;"></div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Notifikasi">
+          🔔<span class="icon-badge" id="notifBadge">0</span>
+        </button>
+        <div class="date-pill">
+          <span class="cal-ico">📅</span>
+          <div>
+            <div class="date-pill-main" id="dateMain">—</div>
+            <div class="date-pill-sub" id="dateSub">—</div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="content" id="content"></div>
-  </div>
-</div>
 
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/pages/_base.js"></script>
-<script src="js/pages/dashboard.js"></script>
-<script src="js/pages/pekerjaan.js"></script>
-<script src="js/pages/progress.js"></script>
-<script src="js/pages/master.js"></script>
-<script src="js/pages/monitoring.js"></script>
-<script src="js/pages/laporan.js"></script>
-<script src="js/pages/notifikasi.js"></script>
-<script src="js/router.js"></script>
-<script src="js/app.js"></script>
+    <!-- BANNERS -->
+    <div class="banner loading" id="loadingBanner">⟳ Mengambil data terbaru dari Google Sheets…</div>
+    <div class="banner error" id="errorBanner">
+      ⚠️ <span id="errorMsg">Gagal memuat data.</span>
+      <button id="retryBtn">Coba lagi</button>
+    </div>
+
+    <!-- ══════════ VIEW: DASHBOARD ══════════ -->
+    <section id="view-dashboard" class="view">
+
+    <!-- FILTER ROW -->
+    <div class="filter-row">
+      <div class="field">
+        <label>Triwulan</label>
+        <select id="filterTriwulan"><option value="">Semua Triwulan</option></select>
+      </div>
+      <div class="field">
+        <label>Bulan</label>
+        <select id="filterBulan"><option value="">Semua Bulan</option></select>
+      </div>
+      <div class="field">
+        <label>Minggu</label>
+        <select id="filterMinggu"><option value="">Semua Minggu</option></select>
+      </div>
+      <div class="field">
+        <label>PIC</label>
+        <select id="filterPic"><option value="">Semua PIC</option></select>
+      </div>
+      <div class="search-field">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Cari pekerjaan...">
+      </div>
+      <button class="btn-refresh" id="refreshBtn"><span class="spin">⟳</span> Refresh Data</button>
+    </div>
+
+    <div class="body-grid">
+
+      <!-- KPI CARDS -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">📋</div>
+          <div class="kpi-text">
+            <div class="kpi-label">Total Pekerjaan</div>
+            <div class="kpi-value" id="kpiTotal">0</div>
+            <div class="kpi-sub">Semua status</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon amber">🕐</div>
+          <div class="kpi-text">
+            <div class="kpi-label">Progress</div>
+            <div class="kpi-value" id="kpiProgress">0</div>
+            <div class="kpi-sub" id="kpiProgressPct">0% dari total</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">✔</div>
+          <div class="kpi-text">
+            <div class="kpi-label">Selesai</div>
+            <div class="kpi-value" id="kpiSelesai">0</div>
+            <div class="kpi-sub" id="kpiSelesaiPct">0% dari total</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">⏱</div>
+          <div class="kpi-text">
+            <div class="kpi-label">Terlambat</div>
+            <div class="kpi-value" id="kpiTerlambat">0</div>
+            <div class="kpi-sub" id="kpiTerlambatPct">0% dari total</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="charts-row">
+        <div class="panel donut-panel">
+          <div class="panel-head"><span>Grafik Status Pekerjaan</span></div>
+          <div class="panel-body donut-body">
+            <div class="donut-wrap"><canvas id="donutChart"></canvas></div>
+            <div class="legend-list" id="legendList"></div>
+          </div>
+        </div>
+
+        <div class="panel bar-panel">
+          <div class="panel-head">
+            <span>Grafik Pekerjaan per Bulan (Tahun <span id="barYear">2026</span>)</span>
+            <select id="yearFilter" class="select-sm"></select>
+          </div>
+          <div class="panel-body">
+            <canvas id="barChart" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="panel pic-panel">
+          <div class="panel-head"><span>Ringkasan Pekerjaan per PIC</span></div>
+          <div class="panel-body">
+            <div class="pic-head-row"><span>PIC</span><span>Jumlah</span></div>
+            <div id="picList" class="pic-list"></div>
+            <a href="#" class="link-more" data-goto="timkerja">Lihat semua PIC →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE + SIDE PANELS -->
+      <div class="lower-row">
+        <div class="panel table-panel">
+          <div class="panel-head"><span>Daftar Pekerjaan</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th><th>Tanggal</th><th>Pekerjaan</th><th>PIC</th>
+                  <th>Prioritas</th><th>Status</th><th>Progress</th><th>Deadline</th>
+                </tr>
+              </thead>
+              <tbody id="mainTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="info" id="pageInfo">Menampilkan 0 dari 0 data</span>
+            <a href="#" class="link-more" data-goto="pekerjaan">Lihat semua pekerjaan →</a>
+          </div>
+        </div>
+
+        <div class="side-panels">
+          <div class="panel mendesak-panel">
+            <div class="panel-head red"><span>⚠ Pekerjaan Mendesak</span></div>
+            <div class="panel-body" id="mendesakList"></div>
+            <div class="table-footer"><a href="#" class="link-more" data-goto="notifikasi">Lihat semua →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="panel">
+          <div class="panel-head"><span>Aktivitas Terbaru</span></div>
+          <div class="panel-body" id="aktivitasList"></div>
+          <div class="table-footer"><a href="#" class="link-more" data-goto="notifikasi">Lihat semua aktivitas →</a></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Deadline Mendatang</span></div>
+          <div class="panel-body" id="deadlineList"></div>
+          <div class="table-footer"><a href="#" class="link-more" data-goto="kalender">Lihat kalender →</a></div>
+        </div>
+      </div>
+
+    </div><!-- /body-grid -->
+    </section>
+
+    <!-- ══════════ VIEW: PEKERJAAN ══════════ -->
+    <section id="view-pekerjaan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="filter-row" style="margin:0 0 0 0;">
+          <div class="search-field" style="flex:1;">
+            <span>🔍</span>
+            <input type="text" id="searchInputFull" placeholder="Cari pekerjaan atau PIC...">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="filterStatusFull">
+              <option value="">Semua Status</option>
+              <option>Selesai</option><option>In Progress</option><option>Review</option><option>Terlambat</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Semua Pekerjaan</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th><th>Tanggal</th><th>Pekerjaan</th><th>PIC</th>
+                  <th>Prioritas</th><th>Status</th><th>Progress</th><th>Deadline</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="fullTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="info" id="fullPageInfo">Menampilkan 0 dari 0 data</span>
+            <div style="display:flex;gap:4px;" id="fullPgNumbers"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: KALENDER ══════════ -->
+    <section id="view-kalender" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="filter-row" style="margin:0;">
+          <button class="btn-refresh" id="calPrev" style="background:#fff;color:var(--navy);border:1px solid var(--border);">‹ Sebelumnya</button>
+          <div class="field" style="min-width:160px;text-align:center;">
+            <label>&nbsp;</label>
+            <div id="calLabel" style="font-weight:800;color:var(--navy);font-size:15px;">—</div>
+          </div>
+          <button class="btn-refresh" id="calNext" style="background:#fff;color:var(--navy);border:1px solid var(--border);">Berikutnya ›</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Kalender Deadline Pekerjaan</span></div>
+          <div class="panel-body">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: LAPORAN ══════════ -->
+    <section id="view-laporan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="charts-row" style="grid-template-columns:1fr 1fr;">
+          <div class="panel">
+            <div class="panel-head"><span>Rekap per Status</span></div>
+            <div class="panel-body"><table id="lapStatusTable"><thead><tr><th>Status</th><th>Jumlah</th><th>%</th></tr></thead><tbody></tbody></table></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><span>Rekap per Triwulan</span></div>
+            <div class="panel-body"><table id="lapTriwulanTable"><thead><tr><th>Triwulan</th><th>Jumlah</th><th>Selesai</th><th>Rata² Progress</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Rekap per PIC</span></div>
+          <div class="panel-body">
+            <table id="lapPicTable">
+              <thead><tr><th>PIC</th><th>Total</th><th>Selesai</th><th>In Progress</th><th>Review</th><th>Terlambat</th><th>Rata² Progress</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <button class="btn-refresh" id="printLaporan">🖨 Cetak / Export PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: TIM KERJA ══════════ -->
+    <section id="view-timkerja" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="kpi-row" id="timKerjaCards" style="grid-template-columns:repeat(4,1fr);"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: DOKUMEN ══════════ -->
+    <section id="view-dokumen" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head"><span>Dokumen Terkait Pekerjaan</span></div>
+          <div class="panel-body">
+            <p style="color:var(--muted);font-size:13px;line-height:1.7;">
+              Belum ada kolom dokumen/link file di Google Sheets kamu. Untuk mengaktifkan fitur ini,
+              tambahkan kolom baru di sheet bernama <b>"Link Dokumen"</b> (isi dengan link Google Drive/Word/PDF
+              untuk masing-masing pekerjaan), lalu beri tahu kami — daftar dokumen akan otomatis muncul di sini.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: NOTIFIKASI ══════════ -->
+    <section id="view-notifikasi" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head red"><span>⚠ Pekerjaan Mendesak &amp; Terlambat</span></div>
+          <div class="panel-body" id="notifMendesakList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Aktivitas Terbaru</span></div>
+          <div class="panel-body" id="notifAktivitasList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: PENGATURAN ══════════ -->
+    <section id="view-pengaturan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head"><span>Pengaturan Sumber Data</span></div>
+          <div class="panel-body">
+            <table class="modal-table">
+              <tr><th>Sumber Data</th><td>Google Sheets</td></tr>
+              <tr><th>ID Sheet</th><td id="setSheetId">—</td></tr>
+              <tr><th>Auto Refresh</th><td>Setiap 5 menit</td></tr>
+              <tr><th>Status Sinkronisasi</th><td id="setSyncStatus">—</td></tr>
+            </table>
+            <p style="color:var(--muted);font-size:12.5px;margin-top:14px;line-height:1.6;">
+              Untuk mengganti sumber data, hubungi pengembang dashboard untuk mengubah <code>SHEET_ID</code> dan <code>GID</code>
+              di file <code>app.js</code>. Pastikan sheet selalu dalam kondisi share "Anyone with the link (Viewer)".
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>Data ditarik dari Google Sheets · Sinkron otomatis tiap 5 menit · OSDM</footer>
+  </main>
+
+  <!-- ══════════════ MODAL ══════════════ -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <span class="modal-title" id="modalTitle">Detail Pekerjaan</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+<script src="app.js"></script>
 </body>
 </html>
