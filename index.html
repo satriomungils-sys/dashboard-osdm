@@ -46,7 +46,6 @@
         <div class="user-avatar">AP</div>
         <div class="user-info">
           <div class="user-name" id="userName">Andi Pratama</div>
-          <div class="user-role" id="userRole">Project Manager</div>
         </div>
         <span class="user-caret">⌄</span>
       </div>
@@ -59,8 +58,8 @@
     <!-- TOP BAR -->
     <div class="topbar">
       <div class="topbar-title">
-        <h1>Dashboard Monitoring Pekerjaan</h1>
-        <p>Tim Kerja OSDM</p>
+        <h1 id="pageTitle">Dashboard Monitoring Pekerjaan</h1>
+        <p id="pageSub">Tim Kerja OSDM</p>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" title="Notifikasi">
@@ -82,6 +81,9 @@
       ⚠️ <span id="errorMsg">Gagal memuat data.</span>
       <button id="retryBtn">Coba lagi</button>
     </div>
+
+    <!-- ══════════ VIEW: DASHBOARD ══════════ -->
+    <section id="view-dashboard" class="view">
 
     <!-- FILTER ROW -->
     <div class="filter-row">
@@ -171,7 +173,7 @@
           <div class="panel-body">
             <div class="pic-head-row"><span>PIC</span><span>Jumlah</span></div>
             <div id="picList" class="pic-list"></div>
-            <a href="#" class="link-more" id="seeAllPic">Lihat semua PIC →</a>
+            <a href="#" class="link-more" data-goto="timkerja">Lihat semua PIC →</a>
           </div>
         </div>
       </div>
@@ -193,7 +195,7 @@
           </div>
           <div class="table-footer">
             <span class="info" id="pageInfo">Menampilkan 0 dari 0 data</span>
-            <a href="#" class="link-more" id="seeAllTasks">Lihat semua pekerjaan →</a>
+            <a href="#" class="link-more" data-goto="pekerjaan">Lihat semua pekerjaan →</a>
           </div>
         </div>
 
@@ -201,7 +203,7 @@
           <div class="panel mendesak-panel">
             <div class="panel-head red"><span>⚠ Pekerjaan Mendesak</span></div>
             <div class="panel-body" id="mendesakList"></div>
-            <div class="table-footer"><a href="#" class="link-more" id="seeAllMendesak">Lihat semua →</a></div>
+            <div class="table-footer"><a href="#" class="link-more" data-goto="notifikasi">Lihat semua →</a></div>
           </div>
         </div>
       </div>
@@ -210,16 +212,160 @@
         <div class="panel">
           <div class="panel-head"><span>Aktivitas Terbaru</span></div>
           <div class="panel-body" id="aktivitasList"></div>
-          <div class="table-footer"><a href="#" class="link-more">Lihat semua aktivitas →</a></div>
+          <div class="table-footer"><a href="#" class="link-more" data-goto="notifikasi">Lihat semua aktivitas →</a></div>
         </div>
         <div class="panel">
           <div class="panel-head"><span>Deadline Mendatang</span></div>
           <div class="panel-body" id="deadlineList"></div>
-          <div class="table-footer"><a href="#" class="link-more">Lihat kalender →</a></div>
+          <div class="table-footer"><a href="#" class="link-more" data-goto="kalender">Lihat kalender →</a></div>
         </div>
       </div>
 
     </div><!-- /body-grid -->
+    </section>
+
+    <!-- ══════════ VIEW: PEKERJAAN ══════════ -->
+    <section id="view-pekerjaan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="filter-row" style="margin:0 0 0 0;">
+          <div class="search-field" style="flex:1;">
+            <span>🔍</span>
+            <input type="text" id="searchInputFull" placeholder="Cari pekerjaan atau PIC...">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="filterStatusFull">
+              <option value="">Semua Status</option>
+              <option>Selesai</option><option>In Progress</option><option>Review</option><option>Terlambat</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Semua Pekerjaan</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th><th>Tanggal</th><th>Pekerjaan</th><th>PIC</th>
+                  <th>Prioritas</th><th>Status</th><th>Progress</th><th>Deadline</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="fullTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="info" id="fullPageInfo">Menampilkan 0 dari 0 data</span>
+            <div style="display:flex;gap:4px;" id="fullPgNumbers"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: KALENDER ══════════ -->
+    <section id="view-kalender" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="filter-row" style="margin:0;">
+          <button class="btn-refresh" id="calPrev" style="background:#fff;color:var(--navy);border:1px solid var(--border);">‹ Sebelumnya</button>
+          <div class="field" style="min-width:160px;text-align:center;">
+            <label>&nbsp;</label>
+            <div id="calLabel" style="font-weight:800;color:var(--navy);font-size:15px;">—</div>
+          </div>
+          <button class="btn-refresh" id="calNext" style="background:#fff;color:var(--navy);border:1px solid var(--border);">Berikutnya ›</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Kalender Deadline Pekerjaan</span></div>
+          <div class="panel-body">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: LAPORAN ══════════ -->
+    <section id="view-laporan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="charts-row" style="grid-template-columns:1fr 1fr;">
+          <div class="panel">
+            <div class="panel-head"><span>Rekap per Status</span></div>
+            <div class="panel-body"><table id="lapStatusTable"><thead><tr><th>Status</th><th>Jumlah</th><th>%</th></tr></thead><tbody></tbody></table></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><span>Rekap per Triwulan</span></div>
+            <div class="panel-body"><table id="lapTriwulanTable"><thead><tr><th>Triwulan</th><th>Jumlah</th><th>Selesai</th><th>Rata² Progress</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Rekap per PIC</span></div>
+          <div class="panel-body">
+            <table id="lapPicTable">
+              <thead><tr><th>PIC</th><th>Total</th><th>Selesai</th><th>In Progress</th><th>Review</th><th>Terlambat</th><th>Rata² Progress</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <button class="btn-refresh" id="printLaporan">🖨 Cetak / Export PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: TIM KERJA ══════════ -->
+    <section id="view-timkerja" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="kpi-row" id="timKerjaCards" style="grid-template-columns:repeat(4,1fr);"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: DOKUMEN ══════════ -->
+    <section id="view-dokumen" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head"><span>Dokumen Terkait Pekerjaan</span></div>
+          <div class="panel-body">
+            <p style="color:var(--muted);font-size:13px;line-height:1.7;">
+              Belum ada kolom dokumen/link file di Google Sheets kamu. Untuk mengaktifkan fitur ini,
+              tambahkan kolom baru di sheet bernama <b>"Link Dokumen"</b> (isi dengan link Google Drive/Word/PDF
+              untuk masing-masing pekerjaan), lalu beri tahu kami — daftar dokumen akan otomatis muncul di sini.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: NOTIFIKASI ══════════ -->
+    <section id="view-notifikasi" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head red"><span>⚠ Pekerjaan Mendesak &amp; Terlambat</span></div>
+          <div class="panel-body" id="notifMendesakList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span>Aktivitas Terbaru</span></div>
+          <div class="panel-body" id="notifAktivitasList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ VIEW: PENGATURAN ══════════ -->
+    <section id="view-pengaturan" class="view" style="display:none;">
+      <div class="body-grid">
+        <div class="panel">
+          <div class="panel-head"><span>Pengaturan Sumber Data</span></div>
+          <div class="panel-body">
+            <table class="modal-table">
+              <tr><th>Sumber Data</th><td>Google Sheets</td></tr>
+              <tr><th>ID Sheet</th><td id="setSheetId">—</td></tr>
+              <tr><th>Auto Refresh</th><td>Setiap 5 menit</td></tr>
+              <tr><th>Status Sinkronisasi</th><td id="setSyncStatus">—</td></tr>
+            </table>
+            <p style="color:var(--muted);font-size:12.5px;margin-top:14px;line-height:1.6;">
+              Untuk mengganti sumber data, hubungi pengembang dashboard untuk mengubah <code>SHEET_ID</code> dan <code>GID</code>
+              di file <code>app.js</code>. Pastikan sheet selalu dalam kondisi share "Anyone with the link (Viewer)".
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <footer>Data ditarik dari Google Sheets · Sinkron otomatis tiap 5 menit · OSDM</footer>
   </main>

@@ -134,8 +134,14 @@ function rowsToData(headers, rows) {
 function parseDate(str) {
   if (!str) return null;
   // Format Google Visualization: Date(2026,5,30)
-  const m = String(str).match(/Date\((\d+),(\d+),(\d+)\)/);
-  if (m) return new Date(+m[1], +m[2], +m[3]);
+  const gv = String(str).match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (gv) return new Date(+gv[1], +gv[2], +gv[3]);
+  // Format dd/mm/yyyy atau dd-mm-yyyy (umum di Indonesia)
+  const dmy = String(str).trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmy) {
+    const d = new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
+    return isNaN(d.getTime()) ? null : d;
+  }
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
@@ -247,6 +253,12 @@ function renderAll() {
   renderMendesak();
   renderAktivitas();
   renderDeadline();
+  renderFullTable();
+  renderCalendar();
+  renderLaporan();
+  renderTimKerja();
+  renderNotifikasi();
+  renderPengaturan();
 }
 
 /* ── KPI CARDS ────────────────────────────────────────────── */
@@ -424,7 +436,201 @@ function renderDeadline() {
     </div>`).join("") || '<div style="color:var(--muted);font-size:12.5px;">Tidak ada deadline mendatang.</div>';
 }
 
-/* ── MODAL DETAIL ─────────────────────────────────────────── */
+/* ── HALAMAN PEKERJAAN (tabel lengkap) ───────────────────── */
+let fullPage = 1;
+const FULL_PAGE_SIZE = 10;
+
+function renderFullTable() {
+  const q  = (document.getElementById("searchInputFull")?.value || "").toLowerCase().trim();
+  const st = document.getElementById("filterStatusFull")?.value || "";
+  let src = RAW_DATA;
+  if (st) src = src.filter(d => d.status === st);
+  if (q)  src = src.filter(d => d.pekerjaan.toLowerCase().includes(q) || d.pic.toLowerCase().includes(q));
+
+  const totalPages = Math.max(1, Math.ceil(src.length / FULL_PAGE_SIZE));
+  if (fullPage > totalPages) fullPage = 1;
+  const start = (fullPage - 1) * FULL_PAGE_SIZE;
+  const page  = src.slice(start, start + FULL_PAGE_SIZE);
+
+  document.getElementById("fullTableBody").innerHTML = page.map((d, i) => {
+    const isLate = d.status === "Terlambat";
+    return `
+    <tr>
+      <td style="color:var(--muted);text-align:center;">${start + i + 1}</td>
+      <td style="white-space:nowrap;">${esc(fmtDateShort(d.tanggal))}</td>
+      <td>${esc(d.pekerjaan)}</td>
+      <td><div class="pic-cell"><span class="pic-avatar">${esc(initials(d.pic))}</span>${esc(d.pic)}</div></td>
+      <td><span class="prio ${prioCls[d.prioritas] || 'sedang'}">${esc(d.prioritas)}</span></td>
+      <td><span class="badge ${statusBadgeCls[d.status] || 'review'}">${esc(d.status)}</span></td>
+      <td>
+        <div class="prog-cell">
+          <div class="track"><div class="fill" style="width:${d.progres}%;background:${statusColor[d.status] || '#64748b'}"></div></div>
+          <span class="pct">${d.progres}%</span>
+        </div>
+      </td>
+      <td><span class="deadline-cell ${isLate ? 'late' : ''}">${esc(fmtDateShort(d.deadline))}</span></td>
+      <td><button class="btn-detail" onclick="openModal(${RAW_DATA.indexOf(d)})" style="border:1px solid #c7d5f0;border-radius:6px;background:#fff;color:var(--blue);padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer;">Detail</button></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">Tidak ada data.</td></tr>`;
+
+  document.getElementById("fullPageInfo").textContent =
+    `Menampilkan ${src.length ? start + 1 : 0} – ${Math.min(start + FULL_PAGE_SIZE, src.length)} dari ${src.length} pekerjaan`;
+
+  const pg = document.getElementById("fullPgNumbers");
+  pg.innerHTML = "";
+  for (let n = 1; n <= totalPages; n++) {
+    const b = document.createElement("button");
+    b.className = "pg-btn" + (n === fullPage ? " active" : "");
+    b.textContent = n;
+    b.style.cssText = "width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:12px;font-weight:700;cursor:pointer;";
+    if (n === fullPage) { b.style.background = "var(--blue)"; b.style.color = "#fff"; }
+    b.onclick = () => { fullPage = n; renderFullTable(); };
+    pg.appendChild(b);
+  }
+}
+
+/* ── HALAMAN KALENDER ─────────────────────────────────────── */
+let calCursor = new Date();
+
+function renderCalendar() {
+  const year  = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  document.getElementById("calLabel").textContent =
+    calCursor.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+
+  const firstDow   = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+
+  const tasksByDay = {};
+  RAW_DATA.forEach(d => {
+    const dt = parseDate(d.deadline);
+    if (dt && dt.getFullYear() === year && dt.getMonth() === month) {
+      (tasksByDay[dt.getDate()] = tasksByDay[dt.getDate()] || []).push(d);
+    }
+  });
+
+  const dows = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join("");
+  for (let i = 0; i < firstDow; i++) html += `<div class="cal-cell empty"></div>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+    const tasks = (tasksByDay[day] || []).slice(0, 3);
+    html += `<div class="cal-cell ${isToday ? 'today' : ''}">
+      <div class="cal-day-num">${day}</div>
+      ${tasks.map(t => `<div class="cal-task ${t.status === 'Terlambat' ? 'late' : t.status === 'Selesai' ? 'done' : ''}" title="${esc(t.pekerjaan)} — ${esc(t.pic)}">${esc(t.pekerjaan)}</div>`).join("")}
+      ${(tasksByDay[day] || []).length > 3 ? `<div style="font-size:9.5px;color:var(--muted);">+${tasksByDay[day].length - 3} lagi</div>` : ""}
+    </div>`;
+  }
+  document.getElementById("calGrid").innerHTML = html;
+}
+
+/* ── HALAMAN LAPORAN ──────────────────────────────────────── */
+function renderLaporan() {
+  // Rekap per status
+  const total = RAW_DATA.length;
+  const statusRows = STATUS_LIST.map(s => {
+    const n = RAW_DATA.filter(d => d.status === s).length;
+    return `<tr><td><span class="badge ${statusBadgeCls[s]}">${s}</span></td><td>${n}</td><td>${pct(n, total)}%</td></tr>`;
+  }).join("");
+  document.querySelector("#lapStatusTable tbody").innerHTML = statusRows || `<tr><td colspan="3">Tidak ada data.</td></tr>`;
+
+  // Rekap per triwulan
+  const triMap = {};
+  RAW_DATA.forEach(d => {
+    const key = d.triwulan || "Tidak diketahui";
+    if (!triMap[key]) triMap[key] = { jumlah: 0, selesai: 0, totalProg: 0 };
+    triMap[key].jumlah++;
+    triMap[key].totalProg += d.progres;
+    if (d.status === "Selesai") triMap[key].selesai++;
+  });
+  document.querySelector("#lapTriwulanTable tbody").innerHTML = Object.entries(triMap).map(([k, v]) => `
+    <tr><td>${esc(k)}</td><td>${v.jumlah}</td><td>${v.selesai}</td><td>${Math.round(v.totalProg / v.jumlah)}%</td></tr>
+  `).join("") || `<tr><td colspan="4">Tidak ada data.</td></tr>`;
+
+  // Rekap per PIC
+  const picMap = {};
+  RAW_DATA.forEach(d => {
+    if (!picMap[d.pic]) picMap[d.pic] = { total: 0, selesai: 0, progress: 0, review: 0, terlambat: 0, totalProg: 0 };
+    const p = picMap[d.pic];
+    p.total++; p.totalProg += d.progres;
+    if (d.status === "Selesai") p.selesai++;
+    if (d.status === "In Progress") p.progress++;
+    if (d.status === "Review") p.review++;
+    if (d.status === "Terlambat") p.terlambat++;
+  });
+  document.querySelector("#lapPicTable tbody").innerHTML = Object.entries(picMap)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([name, p]) => `
+      <tr>
+        <td><div class="pic-cell"><span class="pic-avatar">${esc(initials(name))}</span>${esc(name)}</div></td>
+        <td>${p.total}</td><td>${p.selesai}</td><td>${p.progress}</td><td>${p.review}</td><td>${p.terlambat}</td>
+        <td>${Math.round(p.totalProg / p.total)}%</td>
+      </tr>`).join("") || `<tr><td colspan="7">Tidak ada data.</td></tr>`;
+}
+
+/* ── HALAMAN TIM KERJA ────────────────────────────────────── */
+function renderTimKerja() {
+  const picMap = {};
+  RAW_DATA.forEach(d => {
+    if (!picMap[d.pic]) picMap[d.pic] = { total: 0, selesai: 0, totalProg: 0, terlambat: 0 };
+    const p = picMap[d.pic];
+    p.total++; p.totalProg += d.progres;
+    if (d.status === "Selesai") p.selesai++;
+    if (d.status === "Terlambat") p.terlambat++;
+  });
+
+  document.getElementById("timKerjaCards").innerHTML = Object.entries(picMap)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([name, p]) => {
+      const avg = Math.round(p.totalProg / p.total);
+      return `
+      <div class="team-member-card">
+        <div class="tm-head">
+          <div class="tm-avatar">${esc(initials(name))}</div>
+          <div>
+            <div class="tm-name">${esc(name)}</div>
+            <div class="tm-sub">${p.total} pekerjaan ditangani</div>
+          </div>
+        </div>
+        <div class="tm-stats"><span>Selesai: ${p.selesai}</span><span>Terlambat: ${p.terlambat}</span></div>
+        <div class="tm-track"><div class="tm-fill" style="width:${avg}%;"></div></div>
+        <div class="tm-stats"><span>Rata² progress</span><span style="font-weight:800;color:var(--navy);">${avg}%</span></div>
+      </div>`;
+    }).join("") || '<div style="color:var(--muted);">Belum ada data PIC.</div>';
+}
+
+/* ── HALAMAN NOTIFIKASI ───────────────────────────────────── */
+function renderNotifikasi() {
+  const now = new Date();
+  const urgent = RAW_DATA
+    .filter(d => d.status !== "Selesai" && parseDate(d.deadline))
+    .map(d => ({ ...d, _diff: Math.ceil((parseDate(d.deadline) - now) / 86400000) }))
+    .sort((a, b) => a._diff - b._diff);
+
+  document.getElementById("notifMendesakList").innerHTML = urgent.map(d => `
+    <div class="mendesak-item">
+      <div class="m-title">${esc(d.pekerjaan)} — <span style="color:var(--muted);font-weight:600;">${esc(d.pic)}</span></div>
+      <div class="m-sub">Deadline ${esc(fmtDateShort(d.deadline))} (${d._diff <= 0 ? 'lewat tenggat' : d._diff + ' hari lagi'}) · Status: ${esc(d.status)}</div>
+    </div>`).join("") || '<div style="color:var(--muted);font-size:12.5px;">Tidak ada notifikasi mendesak.</div>';
+
+  const sorted = [...RAW_DATA].sort((a, b) => (parseDate(b.tanggal) || 0) - (parseDate(a.tanggal) || 0)).slice(0, 15);
+  document.getElementById("notifAktivitasList").innerHTML = sorted.map(d => `
+    <div class="aktivitas-item">
+      <span class="a-avatar">${esc(initials(d.pic))}</span>
+      <div class="a-text"><b>${esc(d.pic)}</b> mengupdate progress pekerjaan <b>${esc(d.pekerjaan)}</b> menjadi ${d.progres}%</div>
+    </div>`).join("") || '<div style="color:var(--muted);font-size:12.5px;">Belum ada aktivitas.</div>';
+}
+
+/* ── HALAMAN PENGATURAN ───────────────────────────────────── */
+function renderPengaturan() {
+  document.getElementById("setSheetId").textContent = SHEET_ID;
+  document.getElementById("setSyncStatus").textContent = document.getElementById("dateSub").textContent !== "—"
+    ? "Tersinkron — " + document.getElementById("dateMain").textContent + " " + document.getElementById("dateSub").textContent
+    : "Belum tersinkron";
+}
+
+
 function openModal(idx) {
   if (idx < 0 || idx >= RAW_DATA.length) return;
   const d = RAW_DATA[idx];
@@ -470,14 +676,54 @@ document.getElementById("searchInput").addEventListener("input", () => { current
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
-// Sidebar nav: highlight aktif (placeholder single-page)
+// Sidebar nav: pindah antar halaman (single-page view switching)
+function gotoView(tab) {
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.tab === tab));
+  document.querySelectorAll(".view").forEach(v => v.style.display = (v.id === "view-" + tab) ? "" : "none");
+
+  const titles = {
+    dashboard:  ["Dashboard Monitoring Pekerjaan", "Tim Kerja OSDM"],
+    pekerjaan:  ["Pekerjaan", "Seluruh daftar pekerjaan tim"],
+    kalender:   ["Kalender", "Deadline pekerjaan dalam tampilan kalender"],
+    laporan:    ["Laporan", "Rekapitulasi pekerjaan per status, triwulan, dan PIC"],
+    timkerja:   ["Tim Kerja", "Ringkasan beban kerja tiap anggota tim"],
+    dokumen:    ["Dokumen", "Dokumen terkait pekerjaan"],
+    notifikasi: ["Notifikasi", "Pekerjaan mendesak dan aktivitas terbaru"],
+    pengaturan: ["Pengaturan", "Konfigurasi sumber data dashboard"]
+  };
+  const [t, s] = titles[tab] || titles.dashboard;
+  document.getElementById("pageTitle").textContent = t;
+  document.getElementById("pageSub").textContent = s;
+
+  if (tab === "kalender") renderCalendar();
+}
+
 document.querySelectorAll(".nav-item").forEach(item => {
   item.addEventListener("click", e => {
     e.preventDefault();
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-    item.classList.add("active");
+    gotoView(item.dataset.tab);
   });
 });
+
+// Link "lihat semua" di dashboard yang mengarah ke halaman lain
+document.querySelectorAll("[data-goto]").forEach(link => {
+  link.addEventListener("click", e => {
+    e.preventDefault();
+    gotoView(link.dataset.goto);
+  });
+});
+
+// Halaman Pekerjaan: search + filter status
+document.getElementById("searchInputFull")?.addEventListener("input", () => { fullPage = 1; renderFullTable(); });
+document.getElementById("filterStatusFull")?.addEventListener("change", () => { fullPage = 1; renderFullTable(); });
+
+// Halaman Kalender: navigasi bulan
+document.getElementById("calPrev")?.addEventListener("click", () => { calCursor.setMonth(calCursor.getMonth() - 1); renderCalendar(); });
+document.getElementById("calNext")?.addEventListener("click", () => { calCursor.setMonth(calCursor.getMonth() + 1); renderCalendar(); });
+
+// Halaman Laporan: cetak
+document.getElementById("printLaporan")?.addEventListener("click", () => window.print());
+
 
 /* ── INIT ─────────────────────────────────────────────────── */
 refresh();
