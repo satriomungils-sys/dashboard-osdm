@@ -14,8 +14,8 @@
       SAMA seperti di kolom kiri COLUMN_MAP berikut (boleh ubah
       urutan kolom, tapi nama header harus sama persis).
    ──────────────────────────────────────────────────────────── */
-const SHEET_ID        = "1BLZmMk9v5d7uXZlTn35vMvfQM7AZ5rpUwFXI35tVG58";
-const GID             = "0";
+const SHEET_ID        = "1NLLG-XKkXvctZA-fs1xhqymGOv5n9TFsdMhiT9S7EsE";
+const GID             = "0"; // sheet "Pekerjaan" — ganti jika gid tab kamu berbeda
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
 const COLUMN_MAP = {
